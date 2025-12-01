@@ -107,7 +107,7 @@ flowchart TD
     CHECK -->|Network Error| NET[NetworkError]
     NET --> NET_STATE[Set network_error state]
     NET_STATE --> BACKOFF[Exponential backoff]
-    BACKOFF --> BACKOFF_SLEEP[Sleep min(base × 2^n, 30min)]
+    BACKOFF --> BACKOFF_SLEEP[Sleep with exponential backoff]
 
     SLEEP --> POLL
     AUTH_SLEEP --> POLL
