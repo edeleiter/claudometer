@@ -237,3 +237,101 @@ Log files rotate at 5MB with 3 backups retained.
 | `notification_thresholds` | [50, 75, 90] | Usage % levels that trigger notifications |
 | `start_with_windows` | false | Add to Windows startup registry |
 | `debug_mode` | false | Enable verbose console logging |
+
+---
+
+## Development
+
+### Prerequisites
+
+- Python 3.11+
+- Windows 10/11
+- [uv](https://docs.astral.sh/uv/) package manager
+
+### Setup
+
+```bash
+# Clone the repo
+git clone https://github.com/yourusername/claudometer.git
+cd claudometer
+
+# Install dependencies
+uv sync
+```
+
+### Running Locally
+
+```bash
+# Run from source
+uv run python -m src.main
+
+# Or use the installed command
+uv run claudometer
+```
+
+### Building
+
+```bash
+# Build standalone exe
+uv run python build.py
+```
+
+Output: `dist/ClaudeMonitor.exe` (~15MB standalone executable)
+
+### Deploying
+
+```bash
+# Build, install, and run in one command
+uv run python deploy.py
+```
+
+This will:
+
+1. Build the exe via PyInstaller
+2. Kill any running instance
+3. Copy exe to `%LOCALAPPDATA%\Claudometer\`
+4. Add to Windows startup registry
+5. Launch the app detached
+
+Use this for quick iteration during development.
+
+### Testing
+
+```bash
+# Run all tests
+uv run pytest tests/ -v
+
+# Run with coverage
+uv run pytest tests/ --cov=src --cov-report=html
+
+# Run specific test file
+uv run pytest tests/test_api_client.py -v
+```
+
+### Project Structure
+
+```
+claudometer/
+├── src/
+│   ├── __init__.py
+│   ├── main.py           # Entry point, orchestration
+│   ├── api_client.py     # Claude API communication
+│   ├── config.py         # Configuration management
+│   ├── notifications.py  # Windows toast notifications
+│   ├── tray_icon.py      # System tray integration
+│   ├── icon_generator.py # Dynamic icon creation
+│   ├── startup.py        # Windows startup registry
+│   └── utils.py          # Logging, helpers
+├── tests/
+│   ├── conftest.py       # Shared fixtures
+│   ├── test_api_client.py
+│   ├── test_config.py
+│   └── test_notifications.py
+├── docs/
+│   └── ARCHITECTURE.md   # This file
+├── build.py              # PyInstaller build script
+├── build.spec            # PyInstaller configuration
+├── deploy.py             # Build + install + run
+├── pyproject.toml        # Project metadata
+└── config.example.json   # Example configuration
+```
