@@ -1,0 +1,8 @@
+{
+  "organization_id": "YOUR-ORG-ID-HERE",
+  "session_cookie": "YOUR-SESSION-COOKIE-HERE",
+  "poll_interval_seconds": 300,
+  "notification_thresholds": [50, 75, 90],
+  "start_with_windows": false,
+  "debug_mode": false
+}
