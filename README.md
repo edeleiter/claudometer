@@ -158,6 +158,4 @@ The app displays the higher of the two values on the icon, with both shown in th
 
 MIT
 
-## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
