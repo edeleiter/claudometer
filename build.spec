@@ -10,7 +10,7 @@ BASE_DIR = Path(SPECPATH)
 
 a = Analysis(
     [str(BASE_DIR / 'src' / 'main.py')],
-    pathex=[str(BASE_DIR / 'src')],
+    pathex=[str(BASE_DIR)],
     binaries=[],
     datas=[
         # Include example config

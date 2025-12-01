@@ -6,17 +6,18 @@ import threading
 import time
 from pathlib import Path
 
-from .api_client import (
+from src.api_client import (
     AuthenticationError,
     ClaudeAPIClient,
     ClaudeAPIError,
     NetworkError,
     RateLimitError,
 )
-from .config import ConfigManager, get_config_path, get_log_dir
-from .notifications import NotificationManager
-from .tray_icon import TrayIconManager
-from .utils import setup_logging
+from src.config import ConfigManager, get_config_path, get_log_dir
+from src.notifications import NotificationManager
+from src.startup import disable_startup, enable_startup
+from src.tray_icon import TrayIconManager
+from src.utils import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -188,6 +189,12 @@ class ClaudeUsageMonitor:
         # Check first run
         if not self._check_first_run():
             return 1
+
+        # Apply startup setting
+        if self.config.get("start_with_windows", False):
+            enable_startup()
+        else:
+            disable_startup()
 
         # Setup components
         self._setup_components()
