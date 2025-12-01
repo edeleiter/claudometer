@@ -94,7 +94,7 @@ wheels = [
 ]
 
 [[package]]
-name = "claude-usage-monitor"
+name = "claudometer"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [

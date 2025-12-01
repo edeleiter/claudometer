@@ -1,5 +1,5 @@
 [project]
-name = "claude-usage-monitor"
+name = "claudometer"
 version = "1.0.0"
 description = "Windows system tray application that monitors Claude.ai usage limits"
 readme = "README.md"
@@ -20,7 +20,7 @@ dev = [
 ]
 
 [project.scripts]
-claude-monitor = "src.main:main"
+claudometer = "src.main:main"
 
 [build-system]
 requires = ["hatchling"]
