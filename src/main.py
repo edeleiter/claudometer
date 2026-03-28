@@ -48,6 +48,7 @@ class ClaudeUsageMonitor:
             True if configured and ready to run, False if setup needed
         """
         if self.config.is_configured():
+            self.config.ensure_device_id()
             return True
 
         # First run - create example config and show instructions
@@ -95,6 +96,7 @@ class ClaudeUsageMonitor:
         self.api = ClaudeAPIClient(
             self.config["organization_id"],
             self.config["session_cookie"],
+            self.config["device_id"],
         )
 
         self.notifications = NotificationManager(

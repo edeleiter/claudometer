@@ -4,6 +4,7 @@ import pytest
 import responses
 
 from src.api_client import (
+    ANTHROPIC_CLIENT_SHA,
     AuthenticationError,
     ClaudeAPIClient,
     ClaudeAPIError,
@@ -25,7 +26,7 @@ class TestClaudeAPIClient:
             status=200,
         )
 
-        client = ClaudeAPIClient("test-org", "test-cookie")
+        client = ClaudeAPIClient("test-org", "test-cookie", "test-device-id")
         result = client.get_usage()
 
         assert result["five_hour"]["utilization"] == 47.0
@@ -41,7 +42,7 @@ class TestClaudeAPIClient:
             status=401,
         )
 
-        client = ClaudeAPIClient("test-org", "test-cookie")
+        client = ClaudeAPIClient("test-org", "test-cookie", "test-device-id")
 
         with pytest.raises(AuthenticationError) as exc_info:
             client.get_usage()
@@ -57,7 +58,7 @@ class TestClaudeAPIClient:
             status=403,
         )
 
-        client = ClaudeAPIClient("test-org", "test-cookie")
+        client = ClaudeAPIClient("test-org", "test-cookie", "test-device-id")
 
         with pytest.raises(AuthenticationError):
             client.get_usage()
@@ -72,7 +73,7 @@ class TestClaudeAPIClient:
             headers={"Retry-After": "120"},
         )
 
-        client = ClaudeAPIClient("test-org", "test-cookie")
+        client = ClaudeAPIClient("test-org", "test-cookie", "test-device-id")
 
         with pytest.raises(RateLimitError) as exc_info:
             client.get_usage()
@@ -88,7 +89,7 @@ class TestClaudeAPIClient:
             status=429,
         )
 
-        client = ClaudeAPIClient("test-org", "test-cookie")
+        client = ClaudeAPIClient("test-org", "test-cookie", "test-device-id")
 
         with pytest.raises(RateLimitError) as exc_info:
             client.get_usage()
@@ -104,7 +105,7 @@ class TestClaudeAPIClient:
             status=500,
         )
 
-        client = ClaudeAPIClient("test-org", "test-cookie")
+        client = ClaudeAPIClient("test-org", "test-cookie", "test-device-id")
 
         with pytest.raises(ClaudeAPIError):
             client.get_usage()
@@ -118,7 +119,7 @@ class TestClaudeAPIClient:
             body=ConnectionError("Network error"),
         )
 
-        client = ClaudeAPIClient("test-org", "test-cookie")
+        client = ClaudeAPIClient("test-org", "test-cookie", "test-device-id")
 
         with pytest.raises(NetworkError):
             client.get_usage()
@@ -142,7 +143,7 @@ class TestClaudeAPIClient:
             status=200,
         )
 
-        client = ClaudeAPIClient("test-org", "test-cookie")
+        client = ClaudeAPIClient("test-org", "test-cookie", "test-device-id")
 
         with pytest.raises(NetworkError):
             client.get_usage()
@@ -155,9 +156,38 @@ class TestClaudeAPIClient:
 
     def test_update_cookie(self):
         """Test cookie can be updated."""
-        client = ClaudeAPIClient("test-org", "old-cookie")
+        client = ClaudeAPIClient("test-org", "old-cookie", "test-device-id")
         client.update_cookie("new-cookie")
 
         # Check the session has the new cookie
         cookie = client.session.cookies.get("sessionKey", domain="claude.ai")
         assert cookie == "new-cookie"
+
+
+class TestSessionSetup:
+    """Tests for session header configuration."""
+
+    def test_anthropic_headers_present(self):
+        """Test that required anthropic headers are set."""
+        client = ClaudeAPIClient("test-org", "test-cookie", "test-device-id")
+        headers = client.session.headers
+
+        assert headers["anthropic-client-platform"] == "web_claude_ai"
+        assert headers["anthropic-client-version"] == "1.0.0"
+        assert headers["anthropic-client-sha"] == ANTHROPIC_CLIENT_SHA
+        assert headers["anthropic-device-id"] == "test-device-id"
+        assert headers["Content-Type"] == "application/json"
+        assert headers["Accept"] == "*/*"
+
+    def test_device_id_cookie_set(self):
+        """Test that anthropic-device-id is set as both header and cookie."""
+        client = ClaudeAPIClient("test-org", "test-cookie", "my-uuid")
+        cookie = client.session.cookies.get("anthropic-device-id", domain="claude.ai")
+        assert cookie == "my-uuid"
+
+    def test_update_cookie_preserves_device_id(self):
+        """Test that update_cookie re-sets the device-id cookie."""
+        client = ClaudeAPIClient("test-org", "old-cookie", "my-uuid")
+        client.update_cookie("new-cookie")
+        cookie = client.session.cookies.get("anthropic-device-id", domain="claude.ai")
+        assert cookie == "my-uuid"

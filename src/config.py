@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import sys
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,7 @@ DEFAULT_CONFIG = {
     "notification_thresholds": [50, 75, 90],
     "start_with_windows": False,
     "debug_mode": False,
+    "device_id": "",
 }
 
 
@@ -114,6 +116,14 @@ class ConfigManager:
         except IOError as e:
             logger.error(f"Failed to save config: {e}")
             return False
+
+    def ensure_device_id(self) -> str:
+        """Generate and persist a device_id if not already set."""
+        if not self.config.get("device_id"):
+            self.config["device_id"] = str(uuid.uuid4())
+            self.save()
+            logger.info("Generated new device_id")
+        return self.config["device_id"]
 
     def is_configured(self) -> bool:
         """Check if required configuration is present."""

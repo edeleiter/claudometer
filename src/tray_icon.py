@@ -100,6 +100,16 @@ class TrayIconManager:
             lines.append(f"Weekly:  {pct:.0f}% [{status}]")
             lines.append(f"  Resets {reset}")
 
+        extra = self.current_usage.get("extra_usage")
+        if extra and extra.get("is_enabled"):
+            used = extra.get("used_credits", 0) or 0
+            limit = extra.get("monthly_limit")
+            lines.append(f"Extra:   ${used:.2f} used")
+            if limit is not None:
+                lines.append(f"  Limit: ${limit:.2f}")
+            else:
+                lines.append(f"  Limit: unlimited")
+
         return "\n".join(lines)
 
     def _build_error_tooltip(self) -> str:

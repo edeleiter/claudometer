@@ -25,8 +25,14 @@ def sample_usage_response():
             "utilization": 1.0,
             "resets_at": "2025-12-02T04:00:00+00:00",
         },
+        "seven_day_cowork": None,
         "iguana_necktie": None,
-        "extra_usage": None,
+        "extra_usage": {
+            "is_enabled": True,
+            "monthly_limit": None,
+            "used_credits": 0.0,
+            "utilization": None,
+        },
     }
 
 
@@ -62,6 +68,7 @@ def sample_config():
         "notification_thresholds": [50, 75, 90],
         "start_with_windows": False,
         "debug_mode": False,
+        "device_id": "",
     }
 
 

@@ -7,6 +7,9 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+# Build hash from claude.ai web client — update if Anthropic rotates it
+ANTHROPIC_CLIENT_SHA = "5e8b21836eaa45572d94b89081c05d54bef86ebd"
+
 
 class ClaudeAPIError(Exception):
     """Base exception for API errors."""
@@ -39,15 +42,17 @@ class ClaudeAPIClient:
 
     BASE_URL = "https://claude.ai/api"
 
-    def __init__(self, org_id: str, session_cookie: str):
+    def __init__(self, org_id: str, session_cookie: str, device_id: str):
         """
         Initialize API client.
 
         Args:
             org_id: Organization ID from Claude.ai
             session_cookie: Session cookie value from browser
+            device_id: Persistent device identifier (UUID)
         """
         self.org_id = org_id
+        self.device_id = device_id
         self.session = requests.Session()
         self._setup_session(session_cookie)
         self._consecutive_failures = 0
@@ -55,11 +60,19 @@ class ClaudeAPIClient:
     def _setup_session(self, session_cookie: str) -> None:
         """Configure session with authentication and headers."""
         self.session.cookies.set("sessionKey", session_cookie, domain="claude.ai")
+        self.session.cookies.set(
+            "anthropic-device-id", self.device_id, domain="claude.ai"
+        )
         self.session.headers.update(
             {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "application/json",
+                "Accept": "*/*",
                 "Accept-Language": "en-US,en;q=0.9",
+                "Content-Type": "application/json",
+                "anthropic-client-platform": "web_claude_ai",
+                "anthropic-client-version": "1.0.0",
+                "anthropic-client-sha": ANTHROPIC_CLIENT_SHA,
+                "anthropic-device-id": self.device_id,
             }
         )
 
@@ -116,6 +129,9 @@ class ClaudeAPIClient:
     def update_cookie(self, session_cookie: str) -> None:
         """Update the session cookie."""
         self.session.cookies.set("sessionKey", session_cookie, domain="claude.ai")
+        self.session.cookies.set(
+            "anthropic-device-id", self.device_id, domain="claude.ai"
+        )
         logger.info("Session cookie updated")
 
     @property
