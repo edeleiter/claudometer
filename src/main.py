@@ -207,13 +207,13 @@ class ClaudeUsageMonitor:
 
         self.running = True
 
-        # Start polling thread
-        self.poll_thread = threading.Thread(target=self._poll_loop, daemon=True)
-        self.poll_thread.start()
+        def start_polling():
+            self.poll_thread = threading.Thread(target=self._poll_loop, daemon=True)
+            self.poll_thread.start()
 
-        # Run tray icon (blocks main thread)
+        # Run tray icon (blocks main thread); polling starts after icon is ready
         try:
-            self.tray.start()
+            self.tray.start(on_ready=start_polling)
         except KeyboardInterrupt:
             logger.info("Keyboard interrupt received")
         finally:

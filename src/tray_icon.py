@@ -82,33 +82,30 @@ class TrayIconManager:
         if not self.current_usage:
             return "Claude Monitor\nLoading..."
 
-        lines = ["Claude Usage Monitor", ""]
+        lines = ["Claude Monitor"]
 
         five = self.current_usage.get("five_hour")
         if five:
             pct = five.get("utilization", 0)
             reset = format_relative_time(five.get("resets_at"))
-            status = "OK" if pct < 75 else ("HIGH" if pct < 90 else "CRITICAL")
-            lines.append(f"5-hour:  {pct:.0f}% [{status}]")
-            lines.append(f"  Resets {reset}")
+            status = "OK" if pct < 75 else ("HIGH" if pct < 90 else "CRIT")
+            lines.append(f"5hr: {pct:.0f}% [{status}] {reset}")
 
         seven = self.current_usage.get("seven_day")
         if seven:
             pct = seven.get("utilization", 0)
             reset = format_relative_time(seven.get("resets_at"))
-            status = "OK" if pct < 75 else ("HIGH" if pct < 90 else "CRITICAL")
-            lines.append(f"Weekly:  {pct:.0f}% [{status}]")
-            lines.append(f"  Resets {reset}")
+            status = "OK" if pct < 75 else ("HIGH" if pct < 90 else "CRIT")
+            lines.append(f"Wk: {pct:.0f}% [{status}] {reset}")
 
         extra = self.current_usage.get("extra_usage")
         if extra and extra.get("is_enabled"):
             used = extra.get("used_credits", 0) or 0
             limit = extra.get("monthly_limit")
-            lines.append(f"Extra:   ${used:.2f} used")
             if limit is not None:
-                lines.append(f"  Limit: ${limit:.2f}")
+                lines.append(f"Extra: ${used:.2f} / ${limit:.2f}")
             else:
-                lines.append(f"  Limit: unlimited")
+                lines.append(f"Extra: ${used:.2f} / unlimited")
 
         return "\n".join(lines)
 
@@ -169,11 +166,15 @@ class TrayIconManager:
 
         try:
             self.icon.icon = self._get_current_icon()
-            self.icon.title = self._build_tooltip()
+            tooltip = self._build_tooltip()
+            # Windows tray tooltips are limited to 128 characters
+            if len(tooltip) > 128:
+                tooltip = tooltip[:125] + "..."
+            self.icon.title = tooltip
         except Exception as e:
             logger.error(f"Failed to update icon: {e}")
 
-    def start(self) -> None:
+    def start(self, on_ready: Callable[[], None] | None = None) -> None:
         """Start the tray icon (blocks the main thread)."""
         initial_icon = self.icon_generator.create_loading_icon()
 
@@ -185,7 +186,13 @@ class TrayIconManager:
         )
 
         logger.info("Starting tray icon")
-        self.icon.run()
+
+        def _setup(icon):
+            icon.visible = True
+            if on_ready:
+                on_ready()
+
+        self.icon.run(setup=_setup)
 
     def stop(self) -> None:
         """Stop the tray icon."""
