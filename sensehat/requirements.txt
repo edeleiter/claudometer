@@ -1,0 +1,20 @@
+# Python deps for the Claudometer Sense HAT display.
+#
+# Only `requests` is a real dependency (it's already declared in ../pyproject.toml,
+# so `uv run` / `uv sync` pick it up automatically). The Sense HAT library itself
+# is NOT pinned here because the backend differs by environment.
+requests>=2.31.0
+
+# Desktop / dev machine (emulator) -- ephemeral, nothing to install up front:
+#     uv run --no-project --with sense-emu sense_emu_gui
+#     uv run --no-project --with requests --with sense-emu python -m sensehat.app --emulator
+#
+# Raspberry Pi (real hardware) -- sense_hat comes from apt, so build a venv that
+# can see system packages:
+#     sudo apt install sense-hat
+#     uv venv --system-site-packages
+#     uv pip install requests
+#     ./sensehat/run.sh
+#
+# No GUI / CI smoke test (requests only):
+#     uv run --no-project --with requests python -m sensehat.app --demo --backend stub

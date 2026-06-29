@@ -48,6 +48,11 @@ htmlcov/
 # Config (contains secrets)
 config.json
 
+# Local credentials - never commit ANY .env file (secrets live here).
+# The shareable template is sensehat/env.example (no leading dot, so not matched).
+.env
+.env.*
+
 # Logs
 *.log
 logs/
