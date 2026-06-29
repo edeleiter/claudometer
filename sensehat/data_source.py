@@ -10,6 +10,7 @@ Two sources share a common ``get_usage() -> Usage`` interface:
 
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,10 @@ STATE_RATE_LIMITED = "rate_limited"
 STATE_NETWORK = "network_error"
 STATE_ERROR = "error"
 
+# Nominal length of the rolling 5-hour limit window, used to turn a single
+# ``resets_at`` timestamp into a "fraction of the window still remaining".
+FIVE_HOUR_WINDOW_SECONDS = 5 * 3600
+
 
 @dataclass
 class Usage:
@@ -30,11 +35,30 @@ class Usage:
     five_hour: float = 0.0
     seven_day: float = 0.0
     state: str = STATE_LOADING
+    # ISO 8601 reset timestamps (or None) so the display can count down the time
+    # left in each window, not just show its utilization.
+    five_hour_resets_at: str | None = None
+    seven_day_resets_at: str | None = None
 
     @property
     def worst(self) -> float:
         """The more-critical of the two windows (mirrors the tray icon's max())."""
         return max(self.five_hour, self.seven_day)
+
+
+def seconds_until(iso_timestamp: str | None) -> float | None:
+    """Seconds from now until an ISO 8601 timestamp.
+
+    Returns ``None`` if the timestamp is missing or unparseable, and a negative
+    value if the moment has already passed (callers decide how to clamp).
+    """
+    if not iso_timestamp:
+        return None
+    try:
+        reset = datetime.fromisoformat(iso_timestamp.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+    return (reset - datetime.now(timezone.utc)).total_seconds()
 
 
 def _pct(block) -> float:
@@ -53,12 +77,21 @@ def _pct(block) -> float:
     return 0.0
 
 
+def _resets_at(block) -> str | None:
+    """Pull the ``resets_at`` ISO string out of an API sub-object, if present."""
+    if isinstance(block, dict):
+        return block.get("resets_at")
+    return None
+
+
 def usage_from_api(data: dict) -> Usage:
     """Map a raw Claude.ai usage payload into a ``Usage``."""
     return Usage(
         five_hour=_pct(data.get("five_hour")),
         seven_day=_pct(data.get("seven_day")),
         state=STATE_OK,
+        five_hour_resets_at=_resets_at(data.get("five_hour")),
+        seven_day_resets_at=_resets_at(data.get("seven_day")),
     )
 
 
@@ -121,7 +154,22 @@ class DemoDataSource:
         return phase if phase <= 100.0 else 200.0 - phase
 
     def get_usage(self) -> Usage:
+        from datetime import timedelta
+
         self._t = (self._t + self.step) % 200.0
         five = self._triangle(self._t)
         seven = self._triangle(self._t + 60.0)  # phase-shifted second window
-        return Usage(five_hour=five, seven_day=seven, state=STATE_OK)
+
+        # Synthesize reset timestamps so the countdown bar visibly drains: the
+        # 5-hour window's remaining time sweeps full -> empty across the cycle.
+        now = datetime.now(timezone.utc)
+        remaining = (200.0 - self._t) / 200.0  # 1.0 -> 0.0 over a full cycle
+        five_reset = now + timedelta(seconds=remaining * FIVE_HOUR_WINDOW_SECONDS)
+        seven_reset = now + timedelta(days=3, hours=4)
+        return Usage(
+            five_hour=five,
+            seven_day=seven,
+            state=STATE_OK,
+            five_hour_resets_at=five_reset.isoformat(),
+            seven_day_resets_at=seven_reset.isoformat(),
+        )
