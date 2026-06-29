@@ -45,6 +45,11 @@ MODE_NAMES = {MODE_DUAL: "dual-bars", MODE_METER: "meter", MODE_SCROLL: "scroll"
 LEFT_COLS = (0, 1, 2)
 RIGHT_COLS = (5, 6, 7)
 
+# Meter layout: a 6-wide "worst window" utilization bar plus a 2-wide 5-hour
+# countdown stripe, so this screen also stays alive between polls.
+METER_BAR_COLS = (0, 1, 2, 3, 4, 5)
+METER_TIMER_COLS = (6, 7)
+
 # 8x8 glyphs for non-data states ('#' = lit). Kept tiny and static so the joystick
 # stays responsive (unlike the blocking show_message scroller).
 _GLYPHS = {
@@ -195,8 +200,11 @@ class SenseHatDisplay:
         self._push(grid)
 
     def _meter(self, usage: Usage) -> None:
+        # "Worst window" utilization bar (left 6 cols) with a 5-hour countdown
+        # stripe (right 2 cols) so the screen visibly ticks between polls.
         grid = self._blank()
-        self._fill_bar(grid, range(8), usage.worst)
+        self._fill_bar(grid, METER_BAR_COLS, usage.worst)
+        self._fill_timer_bar(grid, METER_TIMER_COLS, usage.five_hour_resets_at)
         self._push(grid)
 
     def _scroll(self, usage: Usage) -> None:

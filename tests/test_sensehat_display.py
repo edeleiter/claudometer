@@ -16,6 +16,8 @@ from sensehat.data_source import (
 )
 from sensehat.display import (
     LEFT_COLS,
+    METER_BAR_COLS,
+    METER_TIMER_COLS,
     RIGHT_COLS,
     TIMER,
     SenseHatDisplay,
@@ -119,3 +121,22 @@ def test_dual_bars_left_is_usage_right_is_timer():
     right_colors = {grid[y * 8 + x] for y in range(8) for x in RIGHT_COLS}
     assert TIMER in right_colors
     assert tier_color(99.0) not in right_colors
+
+
+def test_meter_has_live_countdown_stripe():
+    sense = FakeSense()
+    display = SenseHatDisplay(sense)
+    usage = Usage(
+        five_hour=20.0,
+        seven_day=80.0,  # worst -> drives the utilization bar (orange)
+        state=STATE_OK,
+        five_hour_resets_at=_iso_in(seconds=FIVE_HOUR_WINDOW_SECONDS),
+    )
+    display._meter(usage)
+    grid = sense.pixels
+
+    bar_colors = {grid[y * 8 + x] for y in range(8) for x in METER_BAR_COLS}
+    assert tier_color(80.0) in bar_colors  # worst window utilization
+
+    stripe_colors = {grid[y * 8 + x] for y in range(8) for x in METER_TIMER_COLS}
+    assert TIMER in stripe_colors  # the live countdown that was missing
